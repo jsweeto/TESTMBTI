@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тест MBTI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1e1e1e;
+      color: #f4f4f4;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .question-page {
+      display: none;
+    }
+    .question-page.active {
+      display: block;
+    }
+    .question {
+      margin-bottom: 20px;
+      background: #2e2e2e;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      margin-top: 10px;
+    }
+    label.option-label {
+      margin: 5px 0;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    input[type="radio"] {
+      margin-right: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 16px;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    #result {
+      margin-top: 30px;
+    }
+    .result-tables {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #555;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #333;
+    }
+    .type-result {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #4CAF50;
+    }
+    .function-bar {
+      height: 20px;
+      background-color: #4CAF50;
+      margin-top: 5px;
+    }
+    .progress-container {
+      width: 100%;
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <h1> тест MBTI</h1>
+  <div id="quiz"></div>
+  <div>
+    <button id="prevBtn" disabled>Назад</button>
+    <button id="nextBtn">Далее</button>
+  </div>
+  <div id="result"></div>
+
+  <script>
+    // Ваши вопросы с указанием функций
+    const questions = [
+      { text: "У Вас часто бывают предчувствия или озарения относительно будущего, которые в результате оказываются верными.", func: "Ni" },
+      { text: "Вы очень цените социальную гармонию и часто стараетесь изо всех сил её поддерживать.", func: "Fe" },
+      { text: "Вы оптимизируете уже существующие системы ради эффективности и производительности.", func: "Te" },
+      { text: "Вы часто используете метафоры для передачи новых идей.", func: "Ne" },
+      { text: "У Вас глаз намётан на эстетичные вещи и Вы наслаждаетесь 'прелестями жизни'.", func: "Fi" },
+      { text: "У Вас есть поразительная способность распознавать потребности других.", func: "Fe" },
+      { text: "Вы живете здесь и сейчас.", func: "Se" },
+      { text: "Вы доверяете неопровержимым фактам и сведениям больше, чем чему-либо еще.", func: "Te" },
+      { text: "Как правило, Вы предпочитаете, чтобы решение было тщательно продуманным, прежде чем использовать его на деле (ценой времени).", func: "Ti" },
+      { text: "Вы можете воздействовать на других во время разговора, читая их язык тела.", func: "Fe" },
+      { text: "Вы тяготеете к абстрактному и часто одержимы смысловыми значениями чего-либо.", func: "Ni" },
+      { text: "Вам трудно общаться с теми, кто думает не так, как Вы.", func: "Fi" },
+      { text: "Вы хорошо распознаёте, соответствуют ли мелочи тому, к чему Вы уже привыкли.", func: "Si" },
+      { text: "Вас могут воспринимать как плаксивого и/или депрессивного человека.", func: "Fi" },
+      { text: "Вы расстраиваетесь, когда ваша забота о других остается недооцененной", func: "Fe" },
+      { text: "Вы используете внутренние логические структуры, теории и системы для описания мира вокруг вас.", func: "Ti" },
+      { text: "Вы сильно доверяете таинственному и подсознательному миру.", func: "Ni" },
+      { text: "Вы работаете над проблемами самостоятельно и отдаляетесь от других людей, чтобы прийти к умозаключению.", func: "Ti" },
+      { text: "Вас описывают как 'застрявшего в своих привычках'.", func: "Si" },
+      { text: "Вы не можете не зацикливаться на мелких деталях.", func: "Si" },
+      { text: "Вы склонны видеть вещи либо хорошими, либо плохими.", func: "Te" },
+      { text: "Вы не любите перемены.", func: "Si" },
+      { text: "Вы обладаете превосходной ориентацией в пространстве и не теряетесь на новом для Вас месте.", func: "Se" },
+      { text: "Вы скорее приукрасите проблему, чем расстроите кого-то.", func: "Fe" },
+      { text: "Вас могут воспринимать как эгоистичного или эгоцентричного человека.", func: "Fi" },
+      { text: "Вы видите общую картину в море деталей.", func: "Ne" },
+      { text: "Вы высоко цените традиции и долг.", func: "Si" },
+      { text: "Вы словно 'мозговой штурмовик': Вы предлагаете множество различных идей в сложившейся ситуации.", func: "Ne" },
+      { text: "Вам нравится организовывать что-либо ради удовольствия.", func: "Te" },
+      { text: "Вы поглощаете информацию из внешнего мира без дополнительной обработки.", func: "Te" },
+      { text: "Вы не хотите строго соответствовать социальным ролям.", func: "Fi" },
+      { text: "Вы цените истину и логику больше всего.", func: "Te" },
+      { text: "Вы цените сплочённость и изо всех сил стараетесь вовлечь всех в группу.", func: "Fe" },
+      { text: "Вы видите мир как набор возможностей, ожидающих своего исследования.", func: "Ne" },
+      { text: "Вы живете в настоящем, а не в прошлом или будущем.", func: "Se" },
+      { text: "Вы остаётесь верны себе.", func: "Fi" },
+      { text: "Вы «просто знаете» вещи, будучи не в состоянии отчётливо выразить их словами.", func: "Ni" },
+      { text: "Вы легко придумываете что-то случайное, чтобы ответить собеседнику.", func: "Ne" },
+      { text: "Вы довольно рисковый человек.", func: "Se" },
+      { text: "Иногда Вы не можете приспособиться к новой информации, поскольку она не согласуется с Вашим личным пониманием концепции.", func: "Ti" },
+      { text: "Вы можете показаться безрассудным и неосознанно причинять боль окружающим.", func: "Se" },
+      { text: "Вы считаете себя практичным и реалистичным человеком, независимым от собственного воображения.", func: "Se" },
+      { text: "Вы понимаете концепцию, логически распознавая структуру и находя взаимосвязи с другими концептами, уже известными Вам.", func: "Ti" },
+      { text: "Вы все подвергаете сомнению.", func: "Ti" },
+      { text: "Зайдя в комнату, вы увидите немного деталей, но запомните из них все.", func: "Si" },
+      { text: "Вы постоянно легко находите неочевидные связи между вещами в реальном мире.", func: "Ne" },
+      { text: "Замечаешь ли ты, что некоторые образы, числа или знаки для тебя имеют личный, почти мистический смысл?", func: "Ni" },
+      { text: "Ты иногда чувствуешь себя отрезанным(ой) от реальности, потому что живешь больше в своих мыслях, чем в моменте?", func: "Ni" }
+    ];
+
+    // Типы MBTI и их функции (в порядке доминантная, вспомогательная, третичная, подчиненная)
+    const typeFunctions = {
+      "INTJ": ["Ni", "Te", "Fi", "Se"],
+      "INTP": ["Ti", "Ne", "Si", "Fe"],
+      "ENTJ": ["Te", "Ni", "Se", "Fi"],
+      "ENTP": ["Ne", "Ti", "Fe", "Si"],
+      "INFJ": ["Ni", "Fe", "Ti", "Se"],
+      "INFP": ["Fi", "Ne", "Si", "Te"],
+      "ENFJ": ["Fe", "Ni", "Se", "Ti"],
+      "ENFP": ["Ne", "Fi", "Te", "Si"],
+      "ISTJ": ["Si", "Te", "Fi", "Ne"],
+      "ISFJ": ["Si", "Fe", "Ti", "Ne"],
+      "ESTJ": ["Te", "Si", "Ne", "Fi"],
+      "ESFJ": ["Fe", "Si", "Ne", "Ti"],
+      "ISTP": ["Ti", "Se", "Ni", "Fe"],
+      "ISFP": ["Fi", "Se", "Ni", "Te"],
+      "ESTP": ["Se", "Ti", "Fe", "Ni"],
+      "ESFP": ["Se", "Fi", "Te", "Ni"]
+    };
+
+    // Веса функций для каждого типа (как на Sakinorva)
+    const functionWeights = {
+      "dominant": 10,
+      "auxiliary": 6,
+      "tertiary": 3,
+      "inferior": 1
+    };
+
+    // Создаем вопросы в DOM
+    const quizDiv = document.getElementById("quiz");
+    questions.forEach((q, index) => {
+      const page = document.createElement("div");
+      page.className = "question-page";
+      if (index === 0) page.classList.add("active");
+
+      const questionEl = document.createElement("div");
+      questionEl.className = "question";
+
+      const counterText = document.createElement("h3");
+      counterText.textContent = `Вопрос ${index + 1} из ${questions.length}`;
+      questionEl.appendChild(counterText);
+
+      const label = document.createElement("label");
+      label.textContent = q.text;
+      questionEl.appendChild(label);
+
+      const optionsDiv = document.createElement("div");
+      optionsDiv.className = "options";
+
+      const options = [
+        { text: "Полностью согласен", value: 3 },
+        { text: "Скорее согласен", value: 2 },
+        { text: "Нейтрально", value: 0 },
+        { text: "Скорее не согласен", value: -1 },
+        { text: "Полностью не согласен", value: -2 }
+      ];
+
+      options.forEach((opt, idx) => {
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = `q${index}`;
+        radio.value = opt.value;
+        radio.id = `q${index}_opt${idx}`;
+        if (idx === 2) radio.checked = true;
+
+        const radioLabel = document.createElement("label");
+        radioLabel.className = "option-label";
+        radioLabel.htmlFor = `q${index}_opt${idx}`;
+        radioLabel.appendChild(radio);
+        radioLabel.appendChild(document.createTextNode(opt.text));
+
+        optionsDiv.appendChild(radioLabel);
+      });
+
+      questionEl.appendChild(optionsDiv);
+      page.appendChild(questionEl);
+      quizDiv.appendChild(page);
+    });
+
+    // Навигация по вопросам
+    let current = 0;
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    prevBtn.onclick = () => navigate(-1);
+    nextBtn.onclick = () => navigate(1);
+
+    function navigate(step) {
+      const pages = document.querySelectorAll(".question-page");
+      pages[current].classList.remove("active");
+      current += step;
+      
+      if (current <= 0) {
+        current = 0;
+        prevBtn.disabled = true;
+      } else {
+        prevBtn.disabled = false;
+      }
+      
+      if (current >= pages.length - 1) {
+        nextBtn.textContent = "Завершить тест";
+      } else {
+        nextBtn.textContent = "Далее";
+      }
+      
+      if (current >= pages.length) {
+        calculateResult();
+        return;
+      }
+      
+      pages[current].classList.add("active");
+    }
+
+    // Расчет результатов (по методу Sakinorva)
+    function calculateResult() {
+      // Собираем ответы и считаем баллы для каждой функции
+      const functionScores = {
+        "Ni": 0, "Ne": 0, "Si": 0, "Se": 0,
+        "Ti": 0, "Te": 0, "Fi": 0, "Fe": 0
+      };
+
+      questions.forEach((q, i) => {
+        const selectedOption = document.querySelector(`input[name='q${i}']:checked`);
+        if (selectedOption) {
+          const answerValue = parseInt(selectedOption.value);
+          functionScores[q.func] += answerValue;
+        }
+      });
+
+      // Нормализуем баллы (делаем их положительными)
+      for (const func in functionScores) {
+        functionScores[func] = Math.max(0, functionScores[func]);
+      }
+
+      // Рассчитываем баллы для каждого типа MBTI
+      const typeScores = {};
+      for (const [type, functions] of Object.entries(typeFunctions)) {
+        let score = 0;
+        score += functionScores[functions[0]] * functionWeights["dominant"];
+        score += functionScores[functions[1]] * functionWeights["auxiliary"];
+        score += functionScores[functions[2]] * functionWeights["tertiary"];
+        score += functionScores[functions[3]] * functionWeights["inferior"];
+        typeScores[type] = score;
+      }
+
+      // Находим тип с максимальным баллом
+      let bestType = "";
+      let bestScore = -Infinity;
+      for (const [type, score] of Object.entries(typeScores)) {
+        if (score > bestScore) {
+          bestScore = score;
+          bestType = type;
+        }
+      }
+
+      // Сортируем типы по баллам для топ-3
+      const sortedTypes = Object.entries(typeScores)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      // Сортируем функции по баллам
+      const sortedFunctions = Object.entries(functionScores)
+        .sort((a, b) => b[1] - a[1]);
+
+      // Выводим результаты
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = `
+        <div class="type-result">Ваш наиболее вероятный тип: ${bestType}</div>
+        <div class="result-tables">
+          <div>
+            <h3>Баллы когнитивных функций</h3>
+            <table>
+              <tr><th>Функция</th><th>Баллы</th><th></th></tr>
+              ${sortedFunctions.map(([func, score]) => `
+                <tr>
+                  <td>${func}</td>
+                  <td>${score.toFixed(1)}</td>
+                  <td>
+                    <div class="progress-container">
+                      <div class="function-bar" style="width: ${(score / sortedFunctions[0][1]) * 100}%"></div>
+                    </div>
+                  </td>
+                </tr>
+              `).join("")}
+            </table>
+          </div>
+          <div>
+            <h3>Топ-3 подходящих типа</h3>
+            <table>
+              <tr><th>Тип</th><th>Баллы</th><th></th></tr>
+              ${sortedTypes.map(([type, score]) => `
+                <tr>
+                  <td>${type}</td>
+                  <td>${score.toFixed(1)}</td>
+                  <td>
+                    <div class="progress-container">
+                      <div class="function-bar" style="width: ${(score / sortedTypes[0][1]) * 100}%"></div>
+                    </div>
+                  </td>
+                </tr>
+              `).join("")}
+            </table>
+            <h3>Функции вашего типа (${bestType})</h3>
+            <table>
+              <tr><th>Позиция</th><th>Функция</th></tr>
+              <tr><td>Доминантная</td><td>${typeFunctions[bestType][0]}</td></tr>
+              <tr><td>Вспомогательная</td><td>${typeFunctions[bestType][1]}</td></tr>
+              <tr><td>Третичная</td><td>${typeFunctions[bestType][2]}</td></tr>
+              <tr><td>Подчиненная</td><td>${typeFunctions[bestType][3]}</td></tr>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // Прячем кнопки навигации после завершения теста
+      prevBtn.style.display = "none";
+      nextBtn.style.display = "none";
+    }
+  </script>
+</body>
+</html>
